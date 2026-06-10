@@ -1,0 +1,154 @@
+{% extends "tickets/base.html" %}
+
+{% block title %}Tickets — TicketSystem{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-0 fw-bold">Todos los Tickets</h1>
+    <p class="text-muted mb-0 small">{{ page_obj.paginator.count }} resultado(s) encontrado(s)</p>
+  </div>
+  <a href="{% url 'tickets:crear' %}" class="btn btn-primary">
+    <i class="bi bi-plus-lg me-1"></i>Nuevo Ticket
+  </a>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+  <div class="card-body py-3">
+    <form method="get" id="form-filtros" class="row g-2 align-items-end">
+      <div class="col-12 col-md-4">
+        <label class="form-label small fw-semibold mb-1">Buscar</label>
+        <div class="input-group">
+          <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+          <input type="text" name="buscar" class="form-control" placeholder="Título o descripción…"
+                 value="{{ buscar }}" id="input-buscar">
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label small fw-semibold mb-1">Estado</label>
+        <select name="estado" id="select-estado" class="form-select">
+          <option value="">Todos</option>
+          {% for valor, label in estados %}
+            <option value="{{ valor }}" {% if filtro_estado == valor %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label small fw-semibold mb-1">Prioridad</label>
+        <select name="prioridad" id="select-prioridad" class="form-select">
+          <option value="">Todas</option>
+          {% for valor, label in prioridades %}
+            <option value="{{ valor }}" {% if filtro_prioridad == valor %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-primary flex-fill">
+          <i class="bi bi-funnel me-1"></i>Filtrar
+        </button>
+        <a href="{% url 'tickets:lista' %}" class="btn btn-outline-secondary" title="Limpiar filtros">
+          <i class="bi bi-x-lg"></i>
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Tabla de tickets -->
+<div class="card">
+  <div class="card-body p-0">
+    {% if tickets %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th width="50">#</th>
+              <th>Título</th>
+              <th>Estado</th>
+              <th>Prioridad</th>
+              <th>Asignado a</th>
+              <th>Creado</th>
+              <th>Actualizado</th>
+              <th width="80" class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ticket in tickets %}
+              <tr>
+                <td class="text-muted small align-middle">{{ ticket.pk }}</td>
+                <td class="align-middle">
+                  <a href="{% url 'tickets:detalle' ticket.pk %}" class="fw-medium">
+                    {{ ticket.titulo }}
+                  </a>
+                  <div class="small text-muted text-truncate" style="max-width:280px;">
+                    {{ ticket.descripcion|truncatechars:60 }}
+                  </div>
+                </td>
+                <td class="align-middle">
+                  <span class="badge bg-{{ ticket.get_estado_badge_class }}">
+                    {{ ticket.get_estado_display }}
+                  </span>
+                </td>
+                <td class="align-middle">
+                  <span class="badge bg-{{ ticket.get_prioridad_badge_class }}">
+                    {{ ticket.get_prioridad_display }}
+                  </span>
+                </td>
+                <td class="align-middle small">{{ ticket.asignado_a|default:"—" }}</td>
+                <td class="align-middle small text-muted">{{ ticket.fecha_creacion|date:"d/m/Y" }}</td>
+                <td class="align-middle small text-muted">{{ ticket.fecha_actualizacion|date:"d/m/Y H:i" }}</td>
+                <td class="align-middle text-center">
+                  <div class="d-flex gap-1 justify-content-center">
+                    <a href="{% url 'tickets:detalle' ticket.pk %}"
+                       class="btn btn-sm btn-outline-primary" title="Ver detalle">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginación -->
+      {% if is_paginated %}
+        <div class="d-flex justify-content-center py-3">
+          <nav>
+            <ul class="pagination pagination-sm mb-0">
+              {% if page_obj.has_previous %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ page_obj.previous_page_number }}&estado={{ filtro_estado }}&prioridad={{ filtro_prioridad }}&buscar={{ buscar }}">
+                    <i class="bi bi-chevron-left"></i>
+                  </a>
+                </li>
+              {% endif %}
+              <li class="page-item active">
+                <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+              </li>
+              {% if page_obj.has_next %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ page_obj.next_page_number }}&estado={{ filtro_estado }}&prioridad={{ filtro_prioridad }}&buscar={{ buscar }}">
+                    <i class="bi bi-chevron-right"></i>
+                  </a>
+                </li>
+              {% endif %}
+            </ul>
+          </nav>
+        </div>
+      {% endif %}
+
+    {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-search fs-1 d-block mb-2"></i>
+        No se encontraron tickets con los filtros aplicados.
+        <div class="mt-2">
+          <a href="{% url 'tickets:lista' %}" class="btn btn-sm btn-outline-secondary me-2">Limpiar filtros</a>
+          <a href="{% url 'tickets:crear' %}" class="btn btn-sm btn-primary">Crear ticket</a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

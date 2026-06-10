@@ -1,0 +1,223 @@
+{% extends "tickets/base.html" %}
+
+{% block title %}Ticket #{{ ticket.pk }} — TicketSystem{% endblock %}
+
+{% block content %}
+
+<!-- Encabezado -->
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb small mb-1">
+        <li class="breadcrumb-item"><a href="{% url 'tickets:lista' %}">Tickets</a></li>
+        <li class="breadcrumb-item active">#{{ ticket.pk }}</li>
+      </ol>
+    </nav>
+    <h1 class="h3 mb-0 fw-bold">{{ ticket.titulo }}</h1>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'tickets:lista' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Volver
+    </a>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  <!-- Columna principal -->
+  <div class="col-12 col-lg-8">
+
+    <!-- Descripción -->
+    <div class="card mb-4">
+      <div class="card-header bg-white py-3">
+        <h2 class="h6 mb-0 fw-semibold"><i class="bi bi-file-text me-1 text-primary"></i>Descripción</h2>
+      </div>
+      <div class="card-body">
+        <p class="mb-0" style="white-space: pre-wrap;">{{ ticket.descripcion }}</p>
+      </div>
+    </div>
+
+    <!-- Actualizar ticket -->
+    <div class="card mb-4">
+      <div class="card-header bg-white py-3">
+        <h2 class="h6 mb-0 fw-semibold"><i class="bi bi-arrow-left-right me-1 text-primary"></i>Actualizar ticket</h2>
+      </div>
+      <div class="card-body">
+        <form method="post" action="{% url 'tickets:actualizar_ticket' ticket.pk %}">
+          {% csrf_token %}
+          <div class="row g-2 align-items-end mb-2">
+            <div class="col-12 col-sm-4">
+              <label class="form-label small fw-semibold mb-1">Estado</label>
+              {{ actualizar_form.estado }}
+            </div>
+            <div class="col-12 col-sm-4">
+              <label class="form-label small fw-semibold mb-1">Prioridad</label>
+              {{ actualizar_form.prioridad }}
+            </div>
+            <div class="col-12 col-sm-4">
+              <label class="form-label small fw-semibold mb-1">Responsable</label>
+              {{ actualizar_form.asignado_a }}
+            </div>
+          </div>
+          <div class="row g-2 align-items-end">
+            <div class="col-12 col-sm-10">
+              <label class="form-label small fw-semibold mb-1">{{ actualizar_form.nota.label }}</label>
+              {{ actualizar_form.nota }}
+            </div>
+            <div class="col-12 col-sm-2">
+              <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-check2"></i> Guardar
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    {% if False %}{# DEMO: ocultar sección de comentarios #}
+    <!-- Comentarios -->
+    <div class="card mb-4">
+      <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h2 class="h6 mb-0 fw-semibold">
+          <i class="bi bi-chat-dots me-1 text-primary"></i>
+          Comentarios
+          <span class="badge bg-primary rounded-pill ms-1">{{ comentarios.count }}</span>
+        </h2>
+      </div>
+      <div class="card-body">
+        {% if comentarios %}
+          <div class="d-flex flex-column gap-3 mb-4">
+            {% for comentario in comentarios %}
+              <div class="comment-bubble">
+                <div class="comment-meta mb-1">
+                  <i class="bi bi-person-circle me-1"></i>
+                  <strong>{{ comentario.autor|default:"Usuario" }}</strong>
+                  <span class="ms-2">{{ comentario.fecha|date:"d/m/Y H:i" }}</span>
+                </div>
+                <p class="mb-0" style="white-space: pre-wrap;">{{ comentario.texto }}</p>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted small mb-3">No hay comentarios aún. Sé el primero en comentar.</p>
+        {% endif %}
+
+        <!-- Formulario comentario -->
+        <form method="post" action="{% url 'tickets:comentar' ticket.pk %}">
+          {% csrf_token %}
+          <label class="form-label fw-semibold small">Agregar comentario</label>
+          {{ comentario_form.texto }}
+          <div class="text-end mt-2">
+            <button type="submit" class="btn btn-primary btn-sm">
+              <i class="bi bi-send me-1"></i>Enviar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+    {% if False %}{# DEMO: ocultar historial de estados #}
+    <!-- Historial de estados -->
+    <div class="card mb-4">
+      <div class="card-header bg-white py-3">
+        <h2 class="h6 mb-0 fw-semibold">
+          <i class="bi bi-journal-text me-1 text-primary"></i>
+          Historial de estados
+          <span class="badge bg-secondary rounded-pill ms-1">{{ historial.count }}</span>
+        </h2>
+      </div>
+      <div class="card-body">
+        {% if historial %}
+          <div class="timeline">
+            {% for entrada in historial %}
+              <div class="timeline-item d-flex gap-3 mb-3">
+                <!-- Icono -->
+                <div class="timeline-icon flex-shrink-0">
+                  {% if not entrada.estado_anterior %}
+                    <span class="badge rounded-circle bg-secondary p-2"><i class="bi bi-plus"></i></span>
+                  {% elif entrada.estado_nuevo == 'resuelto' %}
+                    <span class="badge rounded-circle bg-success p-2"><i class="bi bi-check"></i></span>
+                  {% elif entrada.estado_nuevo == 'en_proceso' %}
+                    <span class="badge rounded-circle bg-primary p-2"><i class="bi bi-arrow-repeat"></i></span>
+                  {% else %}
+                    <span class="badge rounded-circle bg-warning p-2"><i class="bi bi-clock"></i></span>
+                  {% endif %}
+                </div>
+                <!-- Contenido -->
+                <div class="flex-fill">
+                  <div class="d-flex justify-content-between">
+                    <div>
+                      {% if not entrada.estado_anterior %}
+                        <span class="fw-semibold small">Ticket creado</span>
+                        <span class="ms-1 badge bg-secondary">{{ entrada.get_estado_nuevo_display }}</span>
+                      {% else %}
+                        <span class="fw-semibold small">Cambio de estado</span>
+                        <span class="ms-1 badge bg-secondary">{{ entrada.get_estado_anterior_display }}</span>
+                        <i class="bi bi-arrow-right mx-1 text-muted small"></i>
+                        <span class="badge bg-{{ entrada.ticket.get_estado_badge_class }}">{{ entrada.get_estado_nuevo_display }}</span>
+                      {% endif %}
+                    </div>
+                    <span class="text-muted small">{{ entrada.fecha|date:"d/m/Y H:i" }}</span>
+                  </div>
+                  <div class="small text-muted mt-1">
+                    <i class="bi bi-person me-1"></i>{{ entrada.usuario|default:"Sistema" }}
+                    {% if entrada.nota %}
+                      &mdash; <em>{{ entrada.nota }}</em>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              {% if not forloop.last %}
+                <div class="border-start ms-2 mb-2" style="height:12px; margin-left:11px;"></div>
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted small mb-0">Sin historial registrado.</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Columna lateral — Metadatos -->
+  <div class="col-12 col-lg-4">
+    <div class="card">
+      <div class="card-header bg-white py-3">
+        <h2 class="h6 mb-0 fw-semibold"><i class="bi bi-info-circle me-1 text-primary"></i>Información</h2>
+      </div>
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span class="small text-muted">Estado</span>
+          <span class="badge bg-{{ ticket.get_estado_badge_class }}">{{ ticket.get_estado_display }}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span class="small text-muted">Prioridad</span>
+          <span class="badge bg-{{ ticket.get_prioridad_badge_class }}">{{ ticket.get_prioridad_display }}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span class="small text-muted">Creado por</span>
+          <span class="small fw-medium">{{ ticket.creado_por|default:"—" }}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span class="small text-muted">Asignado a</span>
+          <span class="small fw-medium">{{ ticket.asignado_a|default:"—" }}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span class="small text-muted">Creado</span>
+          <span class="small">{{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span class="small text-muted">Actualizado</span>
+          <span class="small">{{ ticket.fecha_actualizacion|date:"d/m/Y H:i" }}</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
