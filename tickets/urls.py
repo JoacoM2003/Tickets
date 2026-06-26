@@ -15,4 +15,10 @@ urlpatterns = [
     # Acciones POST
     path('tickets/<int:pk>/actualizar/', views.actualizar_ticket, name='actualizar_ticket'),
     path('tickets/<int:pk>/comentar/', views.agregar_comentario, name='comentar'),
+
+    # CRUD de usuarios
+    path('usuarios/', views.UsuarioListView.as_view(), name='usuario_lista'),
+    path('usuarios/nuevo/', views.UsuarioCreateView.as_view(), name='usuario_crear'),
+    path('usuarios/<int:pk>/editar/', views.UsuarioUpdateView.as_view(), name='usuario_editar'),
+    path('usuarios/<int:pk>/password/', views.UsuarioPasswordResetView.as_view(), name='usuario_password'),
 ]

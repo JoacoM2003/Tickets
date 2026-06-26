@@ -1,13 +1,15 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, TemplateView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, TemplateView, FormView
 from django.urls import reverse_lazy
 from django.db.models import Count, Q
+from django.contrib.auth.models import User
+from django.contrib.auth.forms import SetPasswordForm
 
 from .models import Ticket, Comentario, HistorialEstado
-from .forms import TicketForm, ActualizarTicketForm, ComentarioForm
+from .forms import TicketForm, ActualizarTicketForm, ComentarioForm, UsuarioCrearForm, UsuarioEditarForm
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
@@ -190,3 +192,102 @@ def agregar_comentario(request, pk):
         else:
             messages.error(request, 'El comentario no puede estar vacío.')
     return redirect('tickets:detalle', pk=pk)
+
+
+class StaffRequiredMixin(UserPassesTestMixin):
+    """Mixin que restringe el acceso solo a usuarios con is_staff=True."""
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_staff
+
+
+class UsuarioListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
+    """Listado de todos los usuarios para administradores."""
+    model = User
+    template_name = 'tickets/usuario_list.html'
+    context_object_name = 'usuarios'
+    paginate_by = 15
+
+    def get_queryset(self):
+        qs = User.objects.all().order_by('username')
+        buscar = self.request.GET.get('buscar')
+        if buscar:
+            qs = qs.filter(
+                Q(username__icontains=buscar) |
+                Q(first_name__icontains=buscar) |
+                Q(last_name__icontains=buscar) |
+                Q(email__icontains=buscar)
+            )
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['buscar'] = self.request.GET.get('buscar', '')
+        return context
+
+
+class UsuarioCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
+    """Vista para crear un nuevo usuario."""
+    model = User
+    form_class = UsuarioCrearForm
+    template_name = 'tickets/usuario_form.html'
+    success_url = reverse_lazy('tickets:usuario_lista')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f'Usuario "{self.object.username}" creado correctamente.')
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo_pagina'] = 'Nuevo Usuario'
+        context['accion'] = 'Crear'
+        return context
+
+
+class UsuarioUpdateView(LoginRequiredMixin, StaffRequiredMixin, UpdateView):
+    """Vista para editar un usuario existente."""
+    model = User
+    form_class = UsuarioEditarForm
+    template_name = 'tickets/usuario_form.html'
+    success_url = reverse_lazy('tickets:usuario_lista')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f'Usuario "{self.object.username}" actualizado correctamente.')
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo_pagina'] = f'Editar Usuario: {self.object.username}'
+        context['accion'] = 'Guardar'
+        context['es_edicion'] = True
+        return context
+
+
+class UsuarioPasswordResetView(LoginRequiredMixin, StaffRequiredMixin, FormView):
+    """Vista para que un administrador restablezca la contraseña de un usuario."""
+    template_name = 'tickets/usuario_password_reset.html'
+    form_class = SetPasswordForm
+    success_url = reverse_lazy('tickets:usuario_lista')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = get_object_or_404(User, pk=self.kwargs['pk'])
+        return kwargs
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        for field in form.fields.values():
+            field.widget.attrs['class'] = 'form-control'
+        return form
+
+    def form_valid(self, form):
+        form.save()
+        user = get_object_or_404(User, pk=self.kwargs['pk'])
+        messages.success(self.request, f'Contraseña de "{user.username}" restablecida correctamente.')
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['u'] = get_object_or_404(User, pk=self.kwargs['pk'])
+        return context

@@ -212,6 +212,20 @@
             <i class="bi bi-plus-circle"></i>Nuevo ticket
           </a>
         </li>
+        {% if user.is_staff %}
+        <hr class="sidebar-divider my-2 mx-3" />
+        <li class="px-3 mb-1">
+          <small class="text-muted text-uppercase fw-semibold" style="font-size:.7rem;letter-spacing:.08em;">
+            Administración
+          </small>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if 'usuario' in request.resolver_match.url_name %}active{% endif %}"
+            href="{% url 'tickets:usuario_lista' %}">
+            <i class="bi bi-people"></i>Usuarios
+          </a>
+        </li>
+        {% endif %}
         <hr class="sidebar-divider my-2 mx-3" />
         <li class="px-3 mb-1">
           <small class="text-muted text-uppercase fw-semibold" style="font-size:.7rem;letter-spacing:.08em;">

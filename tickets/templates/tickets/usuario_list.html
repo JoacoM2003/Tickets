@@ -1,0 +1,143 @@
+{% extends "tickets/base.html" %}
+
+{% block title %}Usuarios — TicketSystem{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-0 fw-bold">Administración de Usuarios</h1>
+    <p class="text-muted mb-0 small">{{ page_obj.paginator.count }} usuario(s) encontrado(s)</p>
+  </div>
+  <a href="{% url 'tickets:usuario_crear' %}" class="btn btn-primary">
+    <i class="bi bi-person-plus me-1"></i>Nuevo Usuario
+  </a>
+</div>
+
+<!-- Filtros de búsqueda -->
+<div class="card mb-4">
+  <div class="card-body py-3">
+    <form method="get" id="form-filtros" class="row g-2 align-items-end">
+      <div class="col-12 col-md-10">
+        <label class="form-label small fw-semibold mb-1">Buscar</label>
+        <div class="input-group">
+          <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+          <input type="text" name="buscar" class="form-control" placeholder="Nombre de usuario, nombre, apellido o email…"
+                 value="{{ buscar }}" id="input-buscar">
+        </div>
+      </div>
+      <div class="col-12 col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-primary flex-fill">
+          <i class="bi bi-funnel me-1"></i>Filtrar
+        </button>
+        <a href="{% url 'tickets:usuario_lista' %}" class="btn btn-outline-secondary" title="Limpiar filtros">
+          <i class="bi bi-x-lg"></i>
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Tabla de usuarios -->
+<div class="card">
+  <div class="card-body p-0">
+    {% if usuarios %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Usuario</th>
+              <th>Nombre Completo</th>
+              <th>Email</th>
+              <th>Administrador (Staff)</th>
+              <th>Estado</th>
+              <th width="150" class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in usuarios %}
+              <tr>
+                <td class="align-middle fw-medium">
+                  {{ u.username }}
+                  {% if u == user %}
+                    <span class="badge bg-secondary ms-1">Tú</span>
+                  {% endif %}
+                </td>
+                <td class="align-middle">
+                  {{ u.first_name }} {{ u.last_name }}
+                  {% if not u.first_name and not u.last_name %}
+                    <span class="text-muted small">—</span>
+                  {% endif %}
+                </td>
+                <td class="align-middle small">{{ u.email|default:"—" }}</td>
+                <td class="align-middle">
+                  {% if u.is_staff %}
+                    <span class="badge bg-primary"><i class="bi bi-shield-check me-1"></i>Staff</span>
+                  {% else %}
+                    <span class="badge bg-light text-dark">Usuario</span>
+                  {% endif %}
+                </td>
+                <td class="align-middle">
+                  {% if u.is_active %}
+                    <span class="badge bg-success">Activo</span>
+                  {% else %}
+                    <span class="badge bg-danger">Inactivo</span>
+                  {% endif %}
+                </td>
+                <td class="align-middle text-center">
+                  <div class="d-flex gap-1 justify-content-center">
+                    <a href="{% url 'tickets:usuario_editar' u.pk %}"
+                       class="btn btn-sm btn-outline-primary" title="Editar datos">
+                      <i class="bi bi-pencil-fill"></i>
+                    </a>
+                    <a href="{% url 'tickets:usuario_password' u.pk %}"
+                       class="btn btn-sm btn-outline-warning" title="Cambiar contraseña">
+                      <i class="bi bi-key-fill"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginación -->
+      {% if is_paginated %}
+        <div class="d-flex justify-content-center py-3">
+          <nav>
+            <ul class="pagination pagination-sm mb-0">
+              {% if page_obj.has_previous %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ page_obj.previous_page_number }}&buscar={{ buscar }}">
+                    <i class="bi bi-chevron-left"></i>
+                  </a>
+                </li>
+              {% endif %}
+              <li class="page-item active">
+                <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+              </li>
+              {% if page_obj.has_next %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ page_obj.next_page_number }}&buscar={{ buscar }}">
+                    <i class="bi bi-chevron-right"></i>
+                  </a>
+                </li>
+              {% endif %}
+            </ul>
+          </nav>
+        </div>
+      {% endif %}
+
+    {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-search fs-1 d-block mb-2"></i>
+        No se encontraron usuarios con los filtros aplicados.
+        <div class="mt-2">
+          <a href="{% url 'tickets:usuario_lista' %}" class="btn btn-sm btn-outline-secondary me-2">Limpiar filtros</a>
+          <a href="{% url 'tickets:usuario_crear' %}" class="btn btn-sm btn-primary">Nuevo usuario</a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
