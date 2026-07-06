@@ -74,50 +74,57 @@
       </div>
     </div>
 
-    {% if False %}{# DEMO: ocultar sección de comentarios #}
     <!-- Comentarios -->
-    <div class="card mb-4">
+    <div class="card mb-4" id="comentarios">
       <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
         <h2 class="h6 mb-0 fw-semibold">
           <i class="bi bi-chat-dots me-1 text-primary"></i>
           Comentarios
-          <span class="badge bg-primary rounded-pill ms-1">{{ comentarios.count }}</span>
+          <span class="badge bg-primary rounded-pill ms-1">{{ total_comentarios }}</span>
         </h2>
       </div>
       <div class="card-body">
         {% if comentarios %}
-          <div class="d-flex flex-column gap-3 mb-4">
+          <div class="comment-list d-flex flex-column gap-3 mb-4">
             {% for comentario in comentarios %}
-              <div class="comment-bubble">
-                <div class="comment-meta mb-1">
-                  <i class="bi bi-person-circle me-1"></i>
-                  <strong>{{ comentario.autor|default:"Usuario" }}</strong>
-                  <span class="ms-2">{{ comentario.fecha|date:"d/m/Y H:i" }}</span>
-                </div>
-                <p class="mb-0" style="white-space: pre-wrap;">{{ comentario.texto }}</p>
-              </div>
+              <article class="comment-item comment-bubble">
+                <header class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                  <div class="comment-meta">
+                    <i class="bi bi-person-circle me-1"></i>
+                    <strong class="text-dark">{{ comentario.get_autor_display }}</strong>
+                  </div>
+                  <time class="badge bg-light text-muted border fw-normal" datetime="{{ comentario.fecha|date:'c' }}">
+                    <i class="bi bi-clock me-1"></i>{{ comentario.fecha|date:"d/m/Y H:i" }} hs
+                  </time>
+                </header>
+                <p class="mb-0 text-body" style="white-space: pre-wrap;">{{ comentario.texto }}</p>
+              </article>
             {% endfor %}
           </div>
         {% else %}
-          <p class="text-muted small mb-3">No hay comentarios aún. Sé el primero en comentar.</p>
+          <div class="text-center text-muted py-4 mb-3 border rounded bg-light">
+            <i class="bi bi-chat-left-text fs-3 d-block mb-2 opacity-50"></i>
+            <p class="small mb-0 fw-medium">Este ticket aún no tiene comentarios</p>
+            <p class="small mb-0">Sé el primero en escribir uno.</p>
+          </div>
         {% endif %}
 
-        <!-- Formulario comentario -->
+        <hr class="my-3">
+
         <form method="post" action="{% url 'tickets:comentar' ticket.pk %}">
           {% csrf_token %}
-          <label class="form-label fw-semibold small">Agregar comentario</label>
+          <label class="form-label fw-semibold small mb-1" for="{{ comentario_form.texto.id_for_label }}">
+            Nuevo comentario
+          </label>
           {{ comentario_form.texto }}
           <div class="text-end mt-2">
             <button type="submit" class="btn btn-primary btn-sm">
-              <i class="bi bi-send me-1"></i>Enviar
+              <i class="bi bi-send me-1"></i>Publicar
             </button>
           </div>
         </form>
       </div>
     </div>
-    {% endif %}
-
-  </div>
 
     {% if False %}{# DEMO: ocultar historial de estados #}
     <!-- Historial de estados -->
@@ -206,6 +213,12 @@
         <li class="list-group-item d-flex justify-content-between align-items-center">
           <span class="small text-muted">Asignado a</span>
           <span class="small fw-medium">{{ ticket.asignado_a|default:"—" }}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span class="small text-muted">Comentarios</span>
+          <a href="#comentarios" class="small fw-medium text-decoration-none">
+            <i class="bi bi-chat-dots me-1"></i>{{ total_comentarios }}
+          </a>
         </li>
         <li class="list-group-item d-flex justify-content-between align-items-center">
           <span class="small text-muted">Creado</span>

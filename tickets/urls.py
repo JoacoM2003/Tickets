@@ -14,7 +14,7 @@ urlpatterns = [
 
     # Acciones POST
     path('tickets/<int:pk>/actualizar/', views.actualizar_ticket, name='actualizar_ticket'),
-    path('tickets/<int:pk>/comentar/', views.agregar_comentario, name='comentar'),
+    path('tickets/<int:pk>/comentar/', views.comentar_ticket, name='comentar'),
 
     # CRUD de usuarios
     path('usuarios/', views.UsuarioListView.as_view(), name='usuario_lista'),

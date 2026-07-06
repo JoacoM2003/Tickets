@@ -114,6 +114,12 @@ class Comentario(models.Model):
     def __str__(self):
         return f'Comentario de {self.autor} en Ticket #{self.ticket_id}'
 
+    def get_autor_display(self):
+        """Nombre legible del autor; fallback si el usuario fue eliminado."""
+        if not self.autor:
+            return 'Usuario'
+        return self.autor.get_full_name() or self.autor.username
+
 
 class HistorialEstado(models.Model):
     """

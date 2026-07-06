@@ -68,6 +68,7 @@
               <th>Estado</th>
               <th>Prioridad</th>
               <th>Asignado a</th>
+              <th class="text-center" width="90">Comentarios</th>
               <th>Creado</th>
               <th>Actualizado</th>
               <th width="80" class="text-center">Acciones</th>
@@ -96,6 +97,15 @@
                   </span>
                 </td>
                 <td class="align-middle small">{{ ticket.asignado_a|default:"—" }}</td>
+                <td class="align-middle text-center">
+                  {% if ticket.num_comentarios %}
+                    <span class="badge bg-primary rounded-pill" title="{{ ticket.num_comentarios }} comentario(s)">
+                      <i class="bi bi-chat-dots me-1"></i>{{ ticket.num_comentarios }}
+                    </span>
+                  {% else %}
+                    <span class="text-muted small" title="Sin comentarios">—</span>
+                  {% endif %}
+                </td>
                 <td class="align-middle small text-muted">{{ ticket.fecha_creacion|date:"d/m/Y" }}</td>
                 <td class="align-middle small text-muted">{{ ticket.fecha_actualizacion|date:"d/m/Y H:i" }}</td>
                 <td class="align-middle text-center">

@@ -81,7 +81,8 @@ class ActualizarTicketForm(forms.ModelForm):
 
 
 class ComentarioForm(forms.ModelForm):
-    """Formulario para agregar un comentario a un ticket."""
+    """Formulario para publicar un comentario en un ticket."""
+
     class Meta:
         model = Comentario
         fields = ['texto']
@@ -89,12 +90,24 @@ class ComentarioForm(forms.ModelForm):
             'texto': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
-                'placeholder': 'Escribe un comentario...',
+                'placeholder': 'Escriba su comentario...',
+                'aria-label': 'Texto del comentario',
             }),
         }
         labels = {
             'texto': '',
         }
+        error_messages = {
+            'texto': {
+                'required': 'El comentario no puede estar vacío.',
+            },
+        }
+
+    def clean_texto(self):
+        texto = self.cleaned_data.get('texto', '').strip()
+        if not texto:
+            raise forms.ValidationError('El comentario no puede estar vacío.')
+        return texto
 
 
 class UsuarioCrearForm(UserCreationForm):

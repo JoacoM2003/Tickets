@@ -61,7 +61,11 @@ class TicketListView(LoginRequiredMixin, ListView):
     paginate_by = 15
 
     def get_queryset(self):
-        qs = Ticket.objects.select_related('asignado_a', 'creado_por')
+        qs = (
+            Ticket.objects
+            .select_related('asignado_a', 'creado_por')
+            .annotate(num_comentarios=Count('comentarios'))
+        )
         estado = self.request.GET.get('estado')
         prioridad = self.request.GET.get('prioridad')
         buscar = self.request.GET.get('buscar')
@@ -89,7 +93,7 @@ class TicketListView(LoginRequiredMixin, ListView):
 class TicketDetailView(LoginRequiredMixin, DetailView):
     """
     Detalle completo de un ticket.
-    Incluye el historial de comentarios y el formulario para agregar uno nuevo.
+    Incluye la lista de comentarios y el formulario para publicar uno nuevo.
     """
     model = Ticket
     template_name = 'tickets/ticket_detail.html'
@@ -97,7 +101,11 @@ class TicketDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['comentarios'] = self.object.comentarios.select_related('autor').all()
+        comentarios = list(
+            self.object.comentarios.select_related('autor').order_by('fecha')
+        )
+        context['comentarios'] = comentarios
+        context['total_comentarios'] = len(comentarios)
         context['historial'] = self.object.historial.select_related('usuario').all()
         context['comentario_form'] = ComentarioForm()
         context['actualizar_form'] = ActualizarTicketForm(instance=self.object, user=self.request.user)
@@ -175,10 +183,10 @@ def actualizar_ticket(request, pk):
 
 
 @login_required
-def agregar_comentario(request, pk):
+def comentar_ticket(request, pk):
     """
-    Vista funcional para agregar un comentario a un ticket.
-    Solo acepta POST. El autor se asigna desde request.user.
+    Publica un comentario en un ticket.
+    Solo acepta POST; el autor se asigna desde request.user.
     """
     ticket = get_object_or_404(Ticket, pk=pk)
     if request.method == 'POST':
@@ -188,7 +196,7 @@ def agregar_comentario(request, pk):
             comentario.ticket = ticket
             comentario.autor = request.user
             comentario.save()
-            messages.success(request, 'Comentario agregado.')
+            messages.success(request, 'Comentario publicado correctamente.')
         else:
             messages.error(request, 'El comentario no puede estar vacío.')
     return redirect('tickets:detalle', pk=pk)
