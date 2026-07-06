@@ -163,7 +163,7 @@
   <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-light bg-white">
     <div class="container-fluid px-4">
-      <a class="navbar-brand" href="{% url 'tickets:lista' %}">
+      <a class="navbar-brand" href="{% url 'tickets:dashboard' %}">
         <i class="bi bi-ticket-perforated-fill text-primary me-1"></i>
         <strong>Ticket</strong>System
       </a>
@@ -198,14 +198,12 @@
     <!-- Sidebar -->
     <nav class="sidebar d-none d-lg-block">
       <ul class="nav flex-column">
-        {% if False %}{# DEMO: ocultar enlace al dashboard #}
         <li class="nav-item">
           <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
             href="{% url 'tickets:dashboard' %}">
             <i class="bi bi-speedometer2"></i>Dashboard
           </a>
         </li>
-        {% endif %}
         <li class="nav-item">
           <a class="nav-link {% if 'lista' in request.resolver_match.url_name %}active{% endif %}"
             href="{% url 'tickets:lista' %}">

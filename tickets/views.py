@@ -23,30 +23,47 @@ class DashboardView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
+        # Optimización: Realizar un único query de agregación para obtener todos los conteos
+        counts = Ticket.objects.aggregate(
+            total=Count('id'),
+            # Estado
+            pendiente=Count('id', filter=Q(estado=Ticket.Estado.PENDIENTE)),
+            en_proceso=Count('id', filter=Q(estado=Ticket.Estado.EN_PROCESO)),
+            resuelto=Count('id', filter=Q(estado=Ticket.Estado.RESUELTO)),
+            # Prioridad
+            baja=Count('id', filter=Q(prioridad=Ticket.Prioridad.BAJA)),
+            media=Count('id', filter=Q(prioridad=Ticket.Prioridad.MEDIA)),
+            alta=Count('id', filter=Q(prioridad=Ticket.Prioridad.ALTA)),
+        )
+
+        total = counts['total']
+        context['total'] = total
+
         # Conteos por estado
-        estados = Ticket.Estado.choices
         context['por_estado'] = [
             {
                 'label': label,
                 'valor': value,
-                'count': Ticket.objects.filter(estado=value).count(),
+                'count': counts.get(value, 0),
             }
-            for value, label in estados
+            for value, label in Ticket.Estado.choices
         ]
 
         # Conteos por prioridad
-        prioridades = Ticket.Prioridad.choices
         context['por_prioridad'] = [
             {
                 'label': label,
                 'valor': value,
-                'count': Ticket.objects.filter(prioridad=value).count(),
+                'count': counts.get(value, 0),
             }
-            for value, label in prioridades
+            for value, label in Ticket.Prioridad.choices
         ]
 
-        context['total'] = Ticket.objects.count()
-        context['ultimos_tickets'] = Ticket.objects.select_related('asignado_a', 'creado_por')[:5]
+        context['ultimos_tickets'] = (
+            Ticket.objects
+            .select_related('asignado_a', 'creado_por')
+            .order_by('-fecha_actualizacion')[:5]
+        )
         return context
 
 

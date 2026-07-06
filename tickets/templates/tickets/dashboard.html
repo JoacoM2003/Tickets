@@ -3,7 +3,6 @@
 {% block title %}Dashboard — TicketSystem{% endblock %}
 
 {% block content %}
-{% if False %}{# DEMO: ocultar métricas y estadísticas del dashboard #}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <div>
     <h1 class="h3 mb-0 fw-bold">Dashboard</h1>
@@ -14,19 +13,36 @@
   </a>
 </div>
 
+{% if total == 0 %}
+<!-- Estado amigable cuando no existen tickets -->
+<div class="card border-0 bg-primary bg-opacity-10 text-primary-emphasis mb-4 shadow-sm">
+  <div class="card-body p-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <div>
+      <h3 class="h5 fw-bold mb-1">
+        <i class="bi bi-rocket-takeoff-fill me-2"></i>¡Te damos la bienvenida a TicketSystem!
+      </h3>
+      <p class="mb-0 text-muted small">El sistema está listo para ser usado, pero aún no hay tickets registrados. Creá el primer ticket para comenzar a gestionar incidencias.</p>
+    </div>
+    <a href="{% url 'tickets:crear' %}" class="btn btn-primary shadow-sm">
+      <i class="bi bi-plus-lg me-1"></i>Crear mi primer ticket
+    </a>
+  </div>
+</div>
+{% endif %}
+
 <!-- Fila de métricas: total + por estado -->
 <div class="row g-4 mb-4">
 
   <!-- Total -->
   <div class="col-12 col-sm-6 col-xl-3">
-    <div class="card metric-card h-100">
+    <div class="card metric-card h-100 shadow-sm border-0">
       <div class="card-body d-flex align-items-center gap-3">
         <div class="rounded-3 p-3 bg-primary bg-opacity-10">
-          <i class="bi bi-ticket-perforated fs-3 text-primary"></i>
+          <i class="bi bi-ticket-perforated-fill fs-3 text-primary"></i>
         </div>
         <div>
           <div class="display-6 text-primary">{{ total }}</div>
-          <div class="text-muted small">Total tickets</div>
+          <div class="text-muted small fw-semibold">Total tickets</div>
         </div>
       </div>
     </div>
@@ -35,15 +51,15 @@
   <!-- Por estado (3 cards) -->
   {% for item in por_estado %}
     <div class="col-12 col-sm-6 col-xl-3">
-      <div class="card metric-card h-100">
+      <div class="card metric-card h-100 shadow-sm border-0">
         <div class="card-body d-flex align-items-center gap-3">
           {% if item.valor == 'pendiente' %}
             <div class="rounded-3 p-3 bg-warning bg-opacity-10">
-              <i class="bi bi-clock fs-3 text-warning"></i>
+              <i class="bi bi-clock-fill fs-3 text-warning"></i>
             </div>
             <div>
               <div class="display-6 text-warning">{{ item.count }}</div>
-              <div class="text-muted small">{{ item.label }}</div>
+              <div class="text-muted small fw-semibold">{{ item.label }}</div>
             </div>
           {% elif item.valor == 'en_proceso' %}
             <div class="rounded-3 p-3 bg-primary bg-opacity-10">
@@ -51,15 +67,15 @@
             </div>
             <div>
               <div class="display-6 text-primary">{{ item.count }}</div>
-              <div class="text-muted small">{{ item.label }}</div>
+              <div class="text-muted small fw-semibold">{{ item.label }}</div>
             </div>
           {% else %}
             <div class="rounded-3 p-3 bg-success bg-opacity-10">
-              <i class="bi bi-check-circle fs-3 text-success"></i>
+              <i class="bi bi-check-circle-fill fs-3 text-success"></i>
             </div>
             <div>
               <div class="display-6 text-success">{{ item.count }}</div>
-              <div class="text-muted small">{{ item.label }}</div>
+              <div class="text-muted small fw-semibold">{{ item.label }}</div>
             </div>
           {% endif %}
         </div>
@@ -73,44 +89,47 @@
 <div class="row g-4 mb-4">
   {% for item in por_prioridad %}
     <div class="col-12 col-md-4">
-      <div class="card h-100">
+      <div class="card h-100 shadow-sm border-0">
         <div class="card-body">
           {% if item.valor == 'alta' %}
             <div class="d-flex justify-content-between align-items-center mb-2">
               <div class="fw-semibold text-danger">
-                <i class="bi bi-exclamation-circle me-1"></i>Prioridad {{ item.label }}
+                <i class="bi bi-exclamation-circle-fill me-1"></i>Prioridad {{ item.label }}
               </div>
               <span class="badge bg-danger rounded-pill fs-6">{{ item.count }}</span>
             </div>
-            {% if total > 0 %}
-              <div class="progress" style="height:6px;">
-                <div class="progress-bar bg-danger" style="width:{% widthratio item.count total 100 %}%"></div>
-              </div>
-            {% endif %}
+            <div class="progress" style="height:6px;">
+              <div class="progress-bar bg-danger" style="width:{{ item.percentage }}%"></div>
+            </div>
+            <div class="text-muted small mt-1" style="font-size: 0.75rem;">
+              {{ item.percentage }}% del total
+            </div>
           {% elif item.valor == 'media' %}
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <div class="fw-semibold text-warning">
-                <i class="bi bi-dash-circle me-1"></i>Prioridad {{ item.label }}
+              <div class="fw-semibold text-warning-emphasis">
+                <i class="bi bi-dash-circle-fill me-1 text-warning"></i>Prioridad {{ item.label }}
               </div>
-              <span class="badge bg-warning rounded-pill fs-6">{{ item.count }}</span>
+              <span class="badge bg-warning text-dark rounded-pill fs-6">{{ item.count }}</span>
             </div>
-            {% if total > 0 %}
-              <div class="progress" style="height:6px;">
-                <div class="progress-bar bg-warning" style="width:{% widthratio item.count total 100 %}%"></div>
-              </div>
-            {% endif %}
+            <div class="progress" style="height:6px;">
+              <div class="progress-bar bg-warning" style="width:{{ item.percentage }}%"></div>
+            </div>
+            <div class="text-muted small mt-1" style="font-size: 0.75rem;">
+              {{ item.percentage }}% del total
+            </div>
           {% else %}
             <div class="d-flex justify-content-between align-items-center mb-2">
               <div class="fw-semibold text-success">
-                <i class="bi bi-arrow-down-circle me-1"></i>Prioridad {{ item.label }}
+                <i class="bi bi-arrow-down-circle-fill me-1"></i>Prioridad {{ item.label }}
               </div>
               <span class="badge bg-success rounded-pill fs-6">{{ item.count }}</span>
             </div>
-            {% if total > 0 %}
-              <div class="progress" style="height:6px;">
-                <div class="progress-bar bg-success" style="width:{% widthratio item.count total 100 %}%"></div>
-              </div>
-            {% endif %}
+            <div class="progress" style="height:6px;">
+              <div class="progress-bar bg-success" style="width:{{ item.percentage }}%"></div>
+            </div>
+            <div class="text-muted small mt-1" style="font-size: 0.75rem;">
+              {{ item.percentage }}% del total
+            </div>
           {% endif %}
         </div>
       </div>
@@ -119,32 +138,33 @@
 </div>
 
 <!-- Últimos tickets -->
-<div class="card">
-  <div class="card-header bg-white py-3">
-    <h2 class="h6 mb-0 fw-semibold">
-      <i class="bi bi-clock-history me-1 text-primary"></i>Últimos tickets creados
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white py-3 border-0">
+    <h2 class="h6 mb-0 fw-semibold text-dark">
+      <i class="bi bi-clock-history me-1 text-primary"></i>Tickets actualizados recientemente
     </h2>
   </div>
   <div class="card-body p-0">
     {% if ultimos_tickets %}
       <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0 align-middle">
           <thead class="table-light">
             <tr>
-              <th>#</th>
+              <th class="ps-3" style="width: 60px;">#</th>
               <th>Título</th>
               <th>Estado</th>
               <th>Prioridad</th>
               <th>Asignado a</th>
               <th>Creado</th>
+              <th class="pe-3">Última actualización</th>
             </tr>
           </thead>
           <tbody>
             {% for ticket in ultimos_tickets %}
               <tr>
-                <td class="text-muted small">{{ ticket.pk }}</td>
+                <td class="text-muted small ps-3 fw-semibold">{{ ticket.pk }}</td>
                 <td>
-                  <a href="{% url 'tickets:detalle' ticket.pk %}">{{ ticket.titulo }}</a>
+                  <a href="{% url 'tickets:detalle' ticket.pk %}" class="fw-semibold text-decoration-none">{{ ticket.titulo }}</a>
                 </td>
                 <td>
                   <span class="badge bg-{{ ticket.get_estado_badge_class }}">
@@ -158,24 +178,24 @@
                 </td>
                 <td class="small">{{ ticket.asignado_a|default:"—" }}</td>
                 <td class="small text-muted">{{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                <td class="small text-muted pe-3">{{ ticket.fecha_actualizacion|date:"d/m/Y H:i" }}</td>
               </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
     {% else %}
-      <div class="text-center py-5 text-muted">
-        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-        No hay tickets aún. <a href="{% url 'tickets:crear' %}">Crear el primero</a>.
+      <div class="text-center py-5 text-muted bg-light rounded-bottom-3 border-top">
+        <div class="rounded-circle p-3 bg-white d-inline-flex mb-3 shadow-sm">
+          <i class="bi bi-inbox fs-2 text-muted"></i>
+        </div>
+        <h4 class="h6 fw-bold mb-1">No hay tickets registrados</h4>
+        <p class="mb-3 small text-muted">Comenzá creando tu primer ticket de soporte para ver su seguimiento aquí.</p>
+        <a href="{% url 'tickets:crear' %}" class="btn btn-sm btn-primary">
+          <i class="bi bi-plus-lg me-1"></i>Crear Ticket
+        </a>
       </div>
     {% endif %}
   </div>
 </div>
-{% else %}
-<script>window.location.replace("{% url 'tickets:lista' %}");</script>
-<noscript>
-  <meta http-equiv="refresh" content="0;url={% url 'tickets:lista' %}">
-</noscript>
-<p class="text-muted">Redirigiendo al listado de tickets… <a href="{% url 'tickets:lista' %}">Ir ahora</a></p>
-{% endif %}
 {% endblock %}
