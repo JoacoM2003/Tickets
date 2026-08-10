@@ -9,6 +9,11 @@ class TicketForm(forms.ModelForm):
     Formulario para crear y editar tickets.
     Excluye campos auto-generados y el campo creado_por (se asigna en la vista).
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'asignado_a' in self.fields:
+            self.fields['asignado_a'].queryset = User.objects.filter(is_active=True).order_by('username')
+
     class Meta:
         model = Ticket
         fields = ['titulo', 'descripcion', 'estado', 'prioridad', 'asignado_a']
@@ -39,10 +44,6 @@ class ActualizarTicketForm(forms.ModelForm):
     """Formulario para actualizar el estado y/o la prioridad de un ticket.
     Incluye una nota opcional que se guardará en el historial si cambia el estado.
     """
-    def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
-        super().__init__(*args, **kwargs)
-
     nota = forms.CharField(
         required=False,
         widget=forms.Textarea(attrs={
@@ -61,6 +62,12 @@ class ActualizarTicketForm(forms.ModelForm):
             'prioridad': forms.Select(attrs={'class': 'form-select'}),
             'asignado_a': forms.Select(attrs={'class': 'form-select'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        if 'asignado_a' in self.fields:
+            self.fields['asignado_a'].queryset = User.objects.filter(is_active=True).order_by('username')
 
     def clean(self):
         cleaned_data = super().clean()

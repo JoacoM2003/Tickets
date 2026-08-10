@@ -268,7 +268,12 @@ class DashboardTests(TestCase):
         
         # Verify latest tickets contains our tickets
         self.assertEqual(len(response.context['ultimos_tickets']), 3)
-        self.assertEqual(response.context['ultimos_tickets'][0].titulo, 'Ticket Resuelto Baja') # Created last
+        latest_titles = {ticket.titulo for ticket in response.context['ultimos_tickets']}
+        self.assertEqual(latest_titles, {
+            'Ticket Pendiente Alta',
+            'Ticket Proceso Media',
+            'Ticket Resuelto Baja',
+        })
 
 
 class AuthTests(TestCase):
@@ -359,6 +364,29 @@ class TicketCRUDTests(TestCase):
         self.assertEqual(entrada.estado_nuevo, Ticket.Estado.PENDIENTE)
         self.assertEqual(entrada.usuario, self.user)
         self.assertEqual(entrada.nota, 'Ticket creado.')
+
+    def test_no_puede_asignar_usuario_inactivo(self):
+        inactive_user = User.objects.create_user(
+            username='inactive',
+            password='inactivepass',
+            is_active=False,
+        )
+        url = reverse('tickets:crear')
+        response = self.client.post(url, {
+            'titulo': 'Ticket con responsable inactivo',
+            'descripcion': 'No debe permitirse asignar un usuario inactivo',
+            'estado': Ticket.Estado.PENDIENTE,
+            'prioridad': Ticket.Prioridad.MEDIA,
+            'asignado_a': inactive_user.pk,
+        })
+        self.assertEqual(response.status_code, 200)
+        form = response.context['form']
+        self.assertIn('asignado_a', form.errors)
+        self.assertIn(
+            'Seleccione una opción válida. La opción seleccionada no es una de las disponibles.',
+            form.errors['asignado_a'],
+        )
+        self.assertFalse(Ticket.objects.filter(titulo='Ticket con responsable inactivo').exists())
 
     def test_detalle_muestra_ticket(self):
         ticket = Ticket.objects.create(

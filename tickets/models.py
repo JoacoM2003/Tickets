@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -57,6 +58,11 @@ class Ticket(models.Model):
         verbose_name='Creado por',
     )
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de creación')
+
+    def clean(self):
+        super().clean()
+        if self.asignado_a and not self.asignado_a.is_active:
+            raise ValidationError({'asignado_a': 'Solo los usuarios activos pueden ser responsables de un ticket.'})
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name='Última actualización')
 
     class Meta:
