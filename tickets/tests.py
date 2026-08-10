@@ -682,3 +682,32 @@ class TicketFilterTests(TestCase):
         response = self.client.get(reverse('tickets:lista'), {'estado': 'invalido'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['tickets']), 3)
+
+    def test_orden_ascendente_por_titulo(self):
+        response = self.client.get(reverse('tickets:lista'), {
+            'sort': 'titulo',
+            'order': 'asc',
+        })
+        self.assertEqual(response.status_code, 200)
+        titulos = [ticket.titulo for ticket in response.context['tickets']]
+        self.assertEqual(titulos, ['Alta pendiente', 'Baja en proceso', 'Media resuelta'])
+
+    def test_orden_descendente_por_fecha_creacion(self):
+        response = self.client.get(reverse('tickets:lista'), {
+            'sort': 'fecha_creacion',
+            'order': 'desc',
+        })
+        self.assertEqual(response.status_code, 200)
+        fechas = [ticket.fecha_creacion for ticket in response.context['tickets']]
+        self.assertTrue(all(fechas[i] >= fechas[i + 1] for i in range(len(fechas) - 1)))
+
+    def test_orden_con_filtro_y_busqueda(self):
+        response = self.client.get(reverse('tickets:lista'), {
+            'estado': 'pendiente',
+            'buscar': 'pendiente',
+            'sort': 'prioridad',
+            'order': 'asc',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['tickets']), 1)
+        self.assertEqual(response.context['tickets'][0].titulo, 'Alta pendiente')

@@ -43,10 +43,12 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-12 col-md-2 d-flex gap-2">
+      <div class="col-12 col-md-1 d-flex gap-2">
         <button type="submit" class="btn btn-primary flex-fill">
           <i class="bi bi-funnel me-1"></i>Filtrar
         </button>
+      </div>
+      <div class="col-12 col-md-1 d-flex gap-2">
         <a href="{% url 'tickets:lista' %}" class="btn btn-outline-secondary" title="Limpiar filtros">
           <i class="bi bi-x-lg"></i>
         </a>
@@ -64,13 +66,73 @@
           <thead class="table-light">
             <tr>
               <th width="50">#</th>
-              <th>Título</th>
-              <th>Estado</th>
-              <th>Prioridad</th>
-              <th>Asignado a</th>
+              <th>
+                <a href="?estado={{ filtro_estado }}&prioridad={{ filtro_prioridad }}&buscar={{ buscar|urlencode }}&sort=titulo&order={% if sort == 'titulo' and order == 'asc' %}desc{% else %}asc{% endif %}"
+                   class="text-decoration-none text-dark">
+                  Título
+                  {% if sort == 'titulo' %}
+                    <i class="bi bi-caret-{{ order|yesno:'up,down' }}-fill small"></i>
+                  {% else %}
+                    <i class="bi bi-filter-circle small text-muted"></i>
+                  {% endif %}
+                </a>
+              </th>
+              <th>
+                <a href="?estado={{ filtro_estado }}&prioridad={{ filtro_prioridad }}&buscar={{ buscar|urlencode }}&sort=estado&order={% if sort == 'estado' and order == 'asc' %}desc{% else %}asc{% endif %}"
+                   class="text-decoration-none text-dark">
+                  Estado
+                  {% if sort == 'estado' %}
+                    <i class="bi bi-caret-{{ order|yesno:'up,down' }}-fill small"></i>
+                  {% else %}
+                    <i class="bi bi-filter-circle small text-muted"></i>
+                  {% endif %}
+                </a>
+              </th>
+              <th>
+                <a href="?estado={{ filtro_estado }}&prioridad={{ filtro_prioridad }}&buscar={{ buscar|urlencode }}&sort=prioridad&order={% if sort == 'prioridad' and order == 'asc' %}desc{% else %}asc{% endif %}"
+                   class="text-decoration-none text-dark">
+                  Prioridad
+                  {% if sort == 'prioridad' %}
+                    <i class="bi bi-caret-{{ order|yesno:'up,down' }}-fill small"></i>
+                  {% else %}
+                    <i class="bi bi-filter-circle small text-muted"></i>
+                  {% endif %}
+                </a>
+              </th>
+              <th>
+                <a href="?estado={{ filtro_estado }}&prioridad={{ filtro_prioridad }}&buscar={{ buscar|urlencode }}&sort=responsable&order={% if sort == 'responsable' and order == 'asc' %}desc{% else %}asc{% endif %}"
+                   class="text-decoration-none text-dark">
+                  Asignado a
+                  {% if sort == 'responsable' %}
+                    <i class="bi bi-caret-{{ order|yesno:'up,down' }}-fill small"></i>
+                  {% else %}
+                    <i class="bi bi-filter-circle small text-muted"></i>
+                  {% endif %}
+                </a>
+              </th>
               <th class="text-center" width="90">Comentarios</th>
-              <th>Creado</th>
-              <th>Actualizado</th>
+              <th>
+                <a href="?estado={{ filtro_estado }}&prioridad={{ filtro_prioridad }}&buscar={{ buscar|urlencode }}&sort=fecha_creacion&order={% if sort == 'fecha_creacion' and order == 'asc' %}desc{% else %}asc{% endif %}"
+                   class="text-decoration-none text-dark">
+                  Creado
+                  {% if sort == 'fecha_creacion' %}
+                    <i class="bi bi-caret-{{ order|yesno:'up,down' }}-fill small"></i>
+                  {% else %}
+                    <i class="bi bi-filter-circle small text-muted"></i>
+                  {% endif %}
+                </a>
+              </th>
+              <th>
+                <a href="?estado={{ filtro_estado }}&prioridad={{ filtro_prioridad }}&buscar={{ buscar|urlencode }}&sort=fecha_actualizacion&order={% if sort == 'fecha_actualizacion' and order == 'asc' %}desc{% else %}asc{% endif %}"
+                   class="text-decoration-none text-dark">
+                  Actualizado
+                  {% if sort == 'fecha_actualizacion' %}
+                    <i class="bi bi-caret-{{ order|yesno:'up,down' }}-fill small"></i>
+                  {% else %}
+                    <i class="bi bi-filter-circle small text-muted"></i>
+                  {% endif %}
+                </a>
+              </th>
               <th width="80" class="text-center">Acciones</th>
             </tr>
           </thead>
@@ -129,7 +191,7 @@
             <ul class="pagination pagination-sm mb-0">
               {% if page_obj.has_previous %}
                 <li class="page-item">
-                  <a class="page-link" href="?page={{ page_obj.previous_page_number }}&estado={{ filtro_estado }}&prioridad={{ filtro_prioridad }}&buscar={{ buscar }}">
+                  <a class="page-link" href="?page={{ page_obj.previous_page_number }}&estado={{ filtro_estado }}&prioridad={{ filtro_prioridad }}&buscar={{ buscar }}&sort={{ sort }}&order={{ order }}">
                     <i class="bi bi-chevron-left"></i>
                   </a>
                 </li>
@@ -139,7 +201,7 @@
               </li>
               {% if page_obj.has_next %}
                 <li class="page-item">
-                  <a class="page-link" href="?page={{ page_obj.next_page_number }}&estado={{ filtro_estado }}&prioridad={{ filtro_prioridad }}&buscar={{ buscar }}">
+                  <a class="page-link" href="?page={{ page_obj.next_page_number }}&estado={{ filtro_estado }}&prioridad={{ filtro_prioridad }}&buscar={{ buscar }}&sort={{ sort }}&order={{ order }}">
                     <i class="bi bi-chevron-right"></i>
                   </a>
                 </li>

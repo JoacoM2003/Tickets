@@ -86,6 +86,8 @@ class TicketListView(LoginRequiredMixin, ListView):
         estado = self.request.GET.get('estado')
         prioridad = self.request.GET.get('prioridad')
         buscar = self.request.GET.get('buscar')
+        sort = self.request.GET.get('sort', 'fecha_creacion')
+        order = self.request.GET.get('order', 'desc')
 
         if estado and estado in dict(Ticket.Estado.choices):
             qs = qs.filter(estado=estado)
@@ -95,7 +97,20 @@ class TicketListView(LoginRequiredMixin, ListView):
             qs = qs.filter(
                 Q(titulo__icontains=buscar) | Q(descripcion__icontains=buscar)
             )
-        return qs.order_by('-fecha_creacion')
+
+        sort_fields = {
+            'fecha_creacion': 'fecha_creacion',
+            'fecha_actualizacion': 'fecha_actualizacion',
+            'titulo': 'titulo',
+            'prioridad': 'prioridad',
+            'estado': 'estado',
+            'responsable': 'asignado_a__username',
+        }
+        sort_field = sort_fields.get(sort, 'fecha_creacion')
+        if order != 'asc':
+            sort_field = f'-{sort_field}'
+
+        return qs.order_by(sort_field)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -104,6 +119,8 @@ class TicketListView(LoginRequiredMixin, ListView):
         context['filtro_estado'] = self.request.GET.get('estado', '')
         context['filtro_prioridad'] = self.request.GET.get('prioridad', '')
         context['buscar'] = self.request.GET.get('buscar', '')
+        context['sort'] = self.request.GET.get('sort', 'fecha_creacion')
+        context['order'] = self.request.GET.get('order', 'desc')
         return context
 
 
