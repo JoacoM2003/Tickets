@@ -95,7 +95,7 @@ class TicketListView(LoginRequiredMixin, ListView):
             qs = qs.filter(
                 Q(titulo__icontains=buscar) | Q(descripcion__icontains=buscar)
             )
-        return qs
+        return qs.order_by('-fecha_creacion')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
