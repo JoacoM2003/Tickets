@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
 
 import dj_database_url
@@ -100,6 +101,14 @@ DATABASES = {
         conn_health_checks=True,
     )
 }
+
+# Los tests usan SQLite en memoria para evitar crear/borrar bases en Neon/PostgreSQL
+# y no depender de permisos ni de confirmaciones interactivas.
+if 'test' in sys.argv:
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': ':memory:',
+    }
 
 
 # Password validation
