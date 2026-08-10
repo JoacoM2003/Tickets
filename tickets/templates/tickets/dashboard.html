@@ -150,7 +150,6 @@
         <table class="table table-hover mb-0 align-middle">
           <thead class="table-light">
             <tr>
-              <th class="ps-3" style="width: 60px;">#</th>
               <th>Título</th>
               <th>Estado</th>
               <th>Prioridad</th>
@@ -162,7 +161,6 @@
           <tbody>
             {% for ticket in ultimos_tickets %}
               <tr>
-                <td class="text-muted small ps-3 fw-semibold">{{ ticket.pk }}</td>
                 <td>
                   <a href="{% url 'tickets:detalle' ticket.pk %}" class="fw-semibold text-decoration-none">{{ ticket.titulo }}</a>
                 </td>

@@ -1,6 +1,6 @@
 {% extends "tickets/base.html" %}
 
-{% block title %}Ticket #{{ ticket.pk }} — TicketSystem{% endblock %}
+{% block title %}{{ ticket.titulo }} — TicketSystem{% endblock %}
 
 {% block content %}
 
@@ -10,7 +10,7 @@
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb small mb-1">
         <li class="breadcrumb-item"><a href="{% url 'tickets:lista' %}">Tickets</a></li>
-        <li class="breadcrumb-item active">#{{ ticket.pk }}</li>
+        <li class="breadcrumb-item active">Detalle</li>
       </ol>
     </nav>
     <h1 class="h3 mb-0 fw-bold">{{ ticket.titulo }}</h1>
