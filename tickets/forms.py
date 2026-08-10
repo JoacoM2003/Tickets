@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
+from django.db.models import Q
 from .models import Ticket, Comentario
 
 
@@ -67,19 +68,45 @@ class ActualizarTicketForm(forms.ModelForm):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         if 'asignado_a' in self.fields:
-            self.fields['asignado_a'].queryset = User.objects.filter(is_active=True).order_by('username')
+            if self.user and self.user.is_staff:
+                queryset = User.objects.filter(is_active=True)
+            else:
+                if self.instance and self.instance.asignado_a:
+                    queryset = User.objects.filter(pk=self.instance.asignado_a.pk)
+                else:
+                    queryset = User.objects.filter(pk=self.user.pk)
+            self.fields['asignado_a'].queryset = queryset.order_by('username')
 
     def clean(self):
         cleaned_data = super().clean()
         estado_nuevo = cleaned_data.get('estado')
+        prioridad_nueva = cleaned_data.get('prioridad')
         asignado_a_nuevo = cleaned_data.get('asignado_a')
 
-        # Regla: Cualquier cambio de estado exige que el ejecutante sea el responsable
-        if 'estado' in self.changed_data:
-            if asignado_a_nuevo != self.user and not self.user.is_superuser:
-                self.add_error('estado', 'Solo el responsable puede realizar cambios de estado. Asígnese el ticket primero o al mismo tiempo.')
+        is_admin = self.user and self.user.is_staff
+        current_asignado = self.instance.asignado_a
+        is_responsable = current_asignado == self.user
+        is_self_assign = asignado_a_nuevo == self.user
 
-        # Regla: No resolver sin un responsable
+        # Tickets sin responsable pueden autoasignarse al propio usuario.
+        if current_asignado is None:
+            if 'asignado_a' in self.changed_data and not is_admin:
+                if not is_self_assign:
+                    self.add_error('asignado_a', 'Solo puede autoasignarse a sí mismo a un ticket sin responsable.')
+            if any(field in self.changed_data for field in ['estado', 'prioridad']):
+                if not (is_self_assign or is_admin):
+                    self.add_error(None, 'Solo el responsable asignado o un administrador puede modificar el estado y la prioridad.')
+
+        else:
+            if 'asignado_a' in self.changed_data and not is_admin:
+                self.add_error('asignado_a', 'Solo un administrador puede cambiar el responsable del ticket.')
+            if any(field in self.changed_data for field in ['estado', 'prioridad']):
+                if not (is_responsable or is_admin):
+                    self.add_error(None, 'Solo el responsable asignado o un administrador puede modificar el estado y la prioridad.')
+
+        if 'estado' in self.changed_data and asignado_a_nuevo != self.user and not is_admin:
+            self.add_error('estado', 'Solo el responsable puede realizar cambios de estado. Asígnese el ticket primero o al mismo tiempo.')
+
         if estado_nuevo == Ticket.Estado.RESUELTO and not asignado_a_nuevo:
             self.add_error('estado', 'No se puede marcar el ticket como Resuelto sin un responsable asignado.')
 

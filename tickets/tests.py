@@ -38,6 +38,14 @@ class ComentarioTests(TestCase):
         self.assertEqual(comentario.autor, self.user)
         self.assertEqual(comentario.ticket, self.ticket)
 
+    def test_usuario_autenticado_puede_agregar_comentario(self):
+        self.client.login(username='ticketuser', password='ticketpassword')
+        response = self.client.post(reverse('tickets:comentar', kwargs={'pk': self.ticket.pk}), {
+            'texto': 'Otro comentario'
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Comentario.objects.filter(texto='Otro comentario').count(), 1)
+
     def test_comentario_vacio_rechazado(self):
         url = reverse('tickets:comentar', kwargs={'pk': self.ticket.pk})
         response = self.client.post(url, {'texto': '   '})
@@ -451,18 +459,19 @@ class TicketUpdateTests(TestCase):
     def test_no_responsable_no_puede_cambiar_estado(self):
         self.ticket.asignado_a = self.assignee
         self.ticket.save()
-        self.client.login(username='otrousuario', password='otropass')
+        self.client.login(username='creator', password='creatorpass')
         url = reverse('tickets:actualizar_ticket', kwargs={'pk': self.ticket.pk})
         response = self.client.post(url, {
-            'estado': Ticket.Estado.EN_PROCESO,
+            'estado': Ticket.Estado.RESUELTO,
             'prioridad': Ticket.Prioridad.MEDIA,
             'asignado_a': self.assignee.pk,
-        })
-        self.assertEqual(response.status_code, 302)
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
         self.ticket.refresh_from_db()
         self.assertEqual(self.ticket.estado, Ticket.Estado.PENDIENTE)
+        self.assertContains(response, 'Solo el responsable asignado o un administrador puede modificar el estado y la prioridad.')
 
-    def test_asignarse_y_cambiar_estado_simultaneamente(self):
+    def test_usuario_comun_puede_autoasignar_ticket_sin_responsable(self):
         self.client.login(username='otrousuario', password='otropass')
         url = reverse('tickets:actualizar_ticket', kwargs={'pk': self.ticket.pk})
         response = self.client.post(url, {
@@ -472,7 +481,56 @@ class TicketUpdateTests(TestCase):
         })
         self.assertEqual(response.status_code, 302)
         self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.asignado_a, self.other)
         self.assertEqual(self.ticket.estado, Ticket.Estado.EN_PROCESO)
+
+    def test_usuario_comun_no_puede_asignar_ticket_con_responsable(self):
+        self.ticket.asignado_a = self.assignee
+        self.ticket.save()
+        self.client.login(username='otrousuario', password='otropass')
+        url = reverse('tickets:actualizar_ticket', kwargs={'pk': self.ticket.pk})
+        response = self.client.post(url, {
+            'estado': Ticket.Estado.PENDIENTE,
+            'prioridad': Ticket.Prioridad.MEDIA,
+            'asignado_a': self.other.pk,
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.asignado_a, self.assignee)
+        self.assertContains(response, 'Solo un administrador puede cambiar el responsable del ticket.')
+
+    def test_usuario_sin_responsable_no_puede_modificar_sin_asignarse(self):
+        self.client.login(username='otrousuario', password='otropass')
+        url = reverse('tickets:actualizar_ticket', kwargs={'pk': self.ticket.pk})
+        response = self.client.post(url, {
+            'estado': Ticket.Estado.EN_PROCESO,
+            'prioridad': Ticket.Prioridad.MEDIA,
+            'asignado_a': '',
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.estado, Ticket.Estado.PENDIENTE)
+        self.assertContains(response, 'Solo el responsable asignado o un administrador puede modificar el estado y la prioridad.')
+
+    def test_administrador_puede_modificar_cualquier_ticket(self):
+        admin = User.objects.create_user(
+            username='admin',
+            password='adminpass',
+            is_staff=True,
+        )
+        self.ticket.asignado_a = self.assignee
+        self.ticket.save()
+        self.client.login(username='admin', password='adminpass')
+        url = reverse('tickets:actualizar_ticket', kwargs={'pk': self.ticket.pk})
+        response = self.client.post(url, {
+            'estado': Ticket.Estado.EN_PROCESO,
+            'prioridad': Ticket.Prioridad.ALTA,
+            'asignado_a': self.other.pk,
+        })
+        self.assertEqual(response.status_code, 302)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.estado, Ticket.Estado.EN_PROCESO)
+        self.assertEqual(self.ticket.prioridad, Ticket.Prioridad.ALTA)
         self.assertEqual(self.ticket.asignado_a, self.other)
 
     def test_no_resolver_sin_responsable(self):
