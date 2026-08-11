@@ -75,7 +75,7 @@ class TicketListView(LoginRequiredMixin, ListView):
     model = Ticket
     template_name = 'tickets/ticket_list.html'
     context_object_name = 'tickets'
-    paginate_by = 15
+    paginate_by = 10
 
     def get_queryset(self):
         qs = (

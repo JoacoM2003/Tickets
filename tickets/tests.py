@@ -711,3 +711,37 @@ class TicketFilterTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['tickets']), 1)
         self.assertEqual(response.context['tickets'][0].titulo, 'Alta pendiente')
+
+    def test_paginacion_muestra_diez_tickets_por_pagina(self):
+        for i in range(12):
+            Ticket.objects.create(
+                titulo=f'Ticket extra {i}',
+                descripcion='Más tickets para paginación',
+                creado_por=self.user,
+            )
+        response = self.client.get(reverse('tickets:lista'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['tickets']), 10)
+        self.assertTrue(response.context['is_paginated'])
+        self.assertEqual(response.context['page_obj'].paginator.num_pages, 2)
+
+    def test_paginacion_preserva_filtros_y_ordenamiento(self):
+        for i in range(12):
+            Ticket.objects.create(
+                titulo=f'Pendiente {i}',
+                descripcion='Filtro de paginación',
+                estado=Ticket.Estado.PENDIENTE,
+                prioridad=Ticket.Prioridad.MEDIA,
+                creado_por=self.user,
+            )
+        response = self.client.get(reverse('tickets:lista'), {
+            'estado': 'pendiente',
+            'buscar': 'Pendiente',
+            'sort': 'titulo',
+            'order': 'asc',
+            'page': 2,
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['page_obj'].number, 2)
+        self.assertContains(response, 'page=1&estado=pendiente&prioridad=&buscar=Pendiente&sort=titulo&order=asc')
+        self.assertContains(response, 'page=2&estado=pendiente&prioridad=&buscar=Pendiente&sort=titulo&order=asc')
