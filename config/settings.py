@@ -94,9 +94,18 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+db_url = os.environ.get('DATABASE_URL')
+if not db_url:
+    db_user = os.environ.get('POSTGRES_USER', 'postgres')
+    db_password = os.environ.get('POSTGRES_PASSWORD', 'postgres')
+    db_name = os.environ.get('POSTGRES_DB', 'tickets')
+    db_host = os.environ.get('POSTGRES_HOST', 'localhost')
+    db_port = os.environ.get('POSTGRES_PORT', '5432')
+    db_url = f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
+
 DATABASES = {
     'default': dj_database_url.config(
-        default='postgresql://postgres:postgres@localhost:5432/tickets',
+        default=db_url,
         conn_max_age=600,
         conn_health_checks=True,
     )
