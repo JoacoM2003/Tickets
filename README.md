@@ -76,7 +76,7 @@ El proyecto está organizado como una aplicación Django clásica:
 1. Clonar el repositorio:
    ```bash
    git clone <url-del-repositorio>
-   cd Tickets2
+   cd Tickets
    ```
 
 2. Crear y activar un entorno virtual:
