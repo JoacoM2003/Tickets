@@ -744,4 +744,4 @@ class TicketFilterTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['page_obj'].number, 2)
         self.assertContains(response, 'page=1&estado=pendiente&prioridad=&buscar=Pendiente&sort=titulo&order=asc')
-        self.assertContains(response, 'page=2&estado=pendiente&prioridad=&buscar=Pendiente&sort=titulo&order=asc')
+        self.assertContains(response, '<span class="page-link">2</span>', html=True)

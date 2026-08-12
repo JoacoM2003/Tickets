@@ -54,6 +54,36 @@
       transition: background .15s, color .15s;
     }
 
+    .offcanvas .sidebar {
+      width: 100%;
+      min-height: 100%;
+      border-right: none;
+      padding-top: 1rem;
+    }
+
+    .offcanvas .sidebar .nav-link {
+      margin: 0;
+      border-radius: 0;
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 2rem;
+      min-width: 0;
+    }
+
+    @media (max-width: 991.98px) {
+      .main-content {
+        padding: 1.25rem;
+      }
+    }
+
+    @media (max-width: 767.98px) {
+      .navbar .navbar-brand {
+        flex: 1 1 auto;
+      }
+    }
+
     .sidebar .nav-link:hover,
     .sidebar .nav-link.active {
       background: #eef0ff;
@@ -163,6 +193,9 @@
   <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-light bg-white">
     <div class="container-fluid px-4">
+      <button class="btn btn-outline-secondary d-lg-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas" aria-label="Abrir menú">
+        <i class="bi bi-list"></i>
+      </button>
       <a class="navbar-brand" href="{% url 'tickets:dashboard' %}">
         <i class="bi bi-ticket-perforated-fill text-primary me-1"></i>
         <strong>Ticket</strong>System
@@ -192,8 +225,74 @@
     </div>
   </nav>
 
+  <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title" id="sidebarOffcanvasLabel">Menú</h5>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+    </div>
+    <div class="offcanvas-body p-0">
+      <nav class="sidebar">
+        <ul class="nav flex-column">
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+              href="{% url 'tickets:dashboard' %}">
+              <i class="bi bi-speedometer2"></i>Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if 'lista' in request.resolver_match.url_name %}active{% endif %}"
+              href="{% url 'tickets:lista' %}">
+              <i class="bi bi-list-ul"></i>Todos los tickets
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'crear' %}active{% endif %}"
+              href="{% url 'tickets:crear' %}">
+              <i class="bi bi-plus-circle"></i>Nuevo ticket
+            </a>
+          </li>
+          {% if user.is_staff %}
+          <hr class="sidebar-divider my-2 mx-3" />
+          <li class="px-3 mb-1">
+            <small class="text-muted text-uppercase fw-semibold" style="font-size:.7rem;letter-spacing:.08em;">
+              Administración
+            </small>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if 'usuario' in request.resolver_match.url_name %}active{% endif %}"
+              href="{% url 'tickets:usuario_lista' %}">
+              <i class="bi bi-people"></i>Usuarios
+            </a>
+          </li>
+          {% endif %}
+          <hr class="sidebar-divider my-2 mx-3" />
+          <li class="px-3 mb-1">
+            <small class="text-muted text-uppercase fw-semibold" style="font-size:.7rem;letter-spacing:.08em;">
+              Filtrar por estado
+            </small>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'tickets:lista' %}?estado=pendiente">
+              <i class="bi bi-clock text-warning"></i>Pendientes
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'tickets:lista' %}?estado=en_proceso">
+              <i class="bi bi-arrow-repeat text-primary"></i>En proceso
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'tickets:lista' %}?estado=resuelto">
+              <i class="bi bi-check-circle text-success"></i>Resueltos
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+
   <!-- Layout principal -->
-  <div class="d-flex">
+  <div class="d-flex flex-column flex-lg-row">
 
     <!-- Sidebar -->
     <nav class="sidebar d-none d-lg-block">
