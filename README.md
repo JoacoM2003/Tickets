@@ -152,6 +152,10 @@ El proyecto está preparado para desplegarse como una aplicación Django estánd
 6. Agregar comentarios para registrar observaciones.
 7. Revisar el historial de estados y las métricas del dashboard.
 
+## Uso de IA en el desarrollo
+
+Este proyecto fue desarrollado utilizando asistentes de IA como apoyo en distintas etapas: ChatGPT y Claude para planificación de arquitectura, modelado de datos y definición de reglas de negocio, y Copilot/Cursor para la implementación del código. Las decisiones de diseño y las reglas de negocio fueron guiadas y revisadas de forma manual, y se validaron con una suite de 46 tests automatizados que permitieron detectar y corregir comportamientos generados incorrectamente.
+
 ## Estado del proyecto
 
 TicketSystem es una aplicación funcional de gestión de tickets con autenticación, administración de usuarios, seguimiento de incidencias, historial de estados y un dashboard de métricas. Está lista para ejecutarse localmente y ampliarse con nuevas funcionalidades según las necesidades.
