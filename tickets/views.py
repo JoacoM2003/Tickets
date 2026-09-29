@@ -7,6 +7,7 @@ from django.urls import reverse_lazy
 from django.db.models import Count, Q
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import SetPasswordForm
+from .services import sugerir_prioridad
 
 from .models import Ticket, Comentario, HistorialEstado
 from .forms import TicketForm, ActualizarTicketForm, ComentarioForm, UsuarioCrearForm, UsuarioEditarForm
@@ -158,6 +159,9 @@ class TicketCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.creado_por = self.request.user
+        form.instance.prioridad = sugerir_prioridad(
+            form.instance.titulo, form.instance.descripcion
+        )
         response = super().form_valid(form)
         # Registrar estado inicial en el historial
         HistorialEstado.objects.create(

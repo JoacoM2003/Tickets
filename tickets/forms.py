@@ -17,7 +17,7 @@ class TicketForm(forms.ModelForm):
 
     class Meta:
         model = Ticket
-        fields = ['titulo', 'descripcion', 'estado', 'prioridad', 'asignado_a']
+        fields = ['titulo', 'descripcion', 'estado', 'asignado_a']
         widgets = {
             'titulo': forms.TextInput(attrs={
                 'class': 'form-control',
