@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth.models import User
 from tickets.models import Ticket, Comentario, HistorialEstado
+from unittest.mock import patch
 
 
 class ComentarioTests(TestCase):
@@ -156,7 +157,7 @@ class UserABMTests(TestCase):
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 302)  # Should redirect to list on success
-        
+
         # Verify user exists
         new_user = User.objects.filter(username='newuser').first()
         self.assertIsNotNone(new_user)
@@ -180,7 +181,7 @@ class UserABMTests(TestCase):
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 302)
-        
+
         # Verify user attributes are updated
         self.regular_user.refresh_from_db()
         self.assertEqual(self.regular_user.first_name, 'UpdatedRegular')
@@ -198,7 +199,7 @@ class UserABMTests(TestCase):
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 302)
-        
+
         # Verify user can log in with new password
         login_success = self.client.login(username='regularuser', password='brandnewpassword123')
         self.assertTrue(login_success)
@@ -213,7 +214,7 @@ class DashboardTests(TestCase):
             first_name='Juan',
             last_name='Pérez'
         )
-        
+
     def test_anonymous_user_redirected_to_login(self):
         """Unauthenticated user accessing the root / dashboard should be redirected."""
         response = self.client.get(reverse('tickets:dashboard'))
@@ -234,7 +235,7 @@ class DashboardTests(TestCase):
     def test_dashboard_metrics_and_recent_tickets(self):
         """Dashboard shows correct ticket counts and order by recent updates."""
         self.client.login(username='dashboarduser', password='dashboardpassword')
-        
+
         # Create tickets with different statuses and priorities
         Ticket.objects.create(
             titulo='Ticket Pendiente Alta',
@@ -257,23 +258,23 @@ class DashboardTests(TestCase):
             prioridad=Ticket.Prioridad.BAJA,
             creado_por=self.user
         )
-        
+
         response = self.client.get(reverse('tickets:dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['total'], 3)
-        
+
         # Verify counts in state context list
         por_estado = {x['valor']: x['count'] for x in response.context['por_estado']}
         self.assertEqual(por_estado['pendiente'], 1)
         self.assertEqual(por_estado['en_proceso'], 1)
         self.assertEqual(por_estado['resuelto'], 1)
-        
+
         # Verify counts in priority context list
         por_prioridad = {x['valor']: x['count'] for x in response.context['por_prioridad']}
         self.assertEqual(por_prioridad['alta'], 1)
         self.assertEqual(por_prioridad['media'], 1)
         self.assertEqual(por_prioridad['baja'], 1)
-        
+
         # Verify latest tickets contains our tickets
         self.assertEqual(len(response.context['ultimos_tickets']), 3)
         latest_titles = {ticket.titulo for ticket in response.context['ultimos_tickets']}
@@ -341,13 +342,13 @@ class TicketCRUDTests(TestCase):
         )
         self.client.login(username='ticketcrud', password='ticketcrudpass')
 
-    def test_crear_ticket(self):
+    @patch('tickets.views.sugerir_prioridad', return_value=Ticket.Prioridad.ALTA)
+    def test_crear_ticket(self, mock_prioridad):
         url = reverse('tickets:crear')
         response = self.client.post(url, {
             'titulo': 'Nuevo incidente',
             'descripcion': 'Descripción detallada del problema',
             'estado': Ticket.Estado.PENDIENTE,
-            'prioridad': Ticket.Prioridad.ALTA,
             'asignado_a': self.assignee.pk,
         })
         self.assertEqual(response.status_code, 302)
@@ -356,13 +357,13 @@ class TicketCRUDTests(TestCase):
         self.assertEqual(ticket.asignado_a, self.assignee)
         self.assertEqual(ticket.prioridad, Ticket.Prioridad.ALTA)
 
-    def test_crear_ticket_registra_historial_inicial(self):
+    @patch('tickets.views.sugerir_prioridad', return_value=Ticket.Prioridad.MEDIA)
+    def test_crear_ticket_registra_historial_inicial(self, mock_prioridad):
         url = reverse('tickets:crear')
         self.client.post(url, {
             'titulo': 'Con historial',
             'descripcion': 'Desc',
             'estado': Ticket.Estado.PENDIENTE,
-            'prioridad': Ticket.Prioridad.MEDIA,
         })
         ticket = Ticket.objects.get(titulo='Con historial')
         historial = HistorialEstado.objects.filter(ticket=ticket)
@@ -384,7 +385,6 @@ class TicketCRUDTests(TestCase):
             'titulo': 'Ticket con responsable inactivo',
             'descripcion': 'No debe permitirse asignar un usuario inactivo',
             'estado': Ticket.Estado.PENDIENTE,
-            'prioridad': Ticket.Prioridad.MEDIA,
             'asignado_a': inactive_user.pk,
         })
         self.assertEqual(response.status_code, 200)
@@ -745,3 +745,36 @@ class TicketFilterTests(TestCase):
         self.assertEqual(response.context['page_obj'].number, 2)
         self.assertContains(response, 'page=1&estado=pendiente&prioridad=&buscar=Pendiente&sort=titulo&order=asc')
         self.assertContains(response, '<span class="page-link">2</span>', html=True)
+
+
+class NotificacionSQSTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='tester', password='12345')
+        self.ticket = Ticket.objects.create(
+            titulo='Ticket de prueba',
+            descripcion='Descripción de prueba',
+            creado_por=self.user,
+        )
+
+    @patch('tickets.signals.sqs')
+    def test_signal_envia_mensaje_a_sqs_al_crear_historial(self, mock_sqs):
+        """Al crear un HistorialEstado, debe llamarse a sqs.send_message."""
+        HistorialEstado.objects.create(
+            ticket=self.ticket,
+            usuario=self.user,
+            estado_anterior='',
+            estado_nuevo='pendiente',
+        )
+        mock_sqs.send_message.assert_called_once()
+
+    @patch('tickets.signals.sqs')
+    def test_mensaje_incluye_datos_correctos_del_ticket(self, mock_sqs):
+        """El mensaje enviado debe contener el ID del ticket correcto."""
+        HistorialEstado.objects.create(
+            ticket=self.ticket,
+            usuario=self.user,
+            estado_anterior='pendiente',
+            estado_nuevo='resuelto',
+        )
+        _, kwargs = mock_sqs.send_message.call_args
+        self.assertIn(str(self.ticket.id), kwargs['MessageBody'])
