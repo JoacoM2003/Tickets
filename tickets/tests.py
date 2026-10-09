@@ -747,6 +747,106 @@ class TicketFilterTests(TestCase):
         self.assertContains(response, '<span class="page-link">2</span>', html=True)
 
 
+class TicketPublicoTests(TestCase):
+    def setUp(self):
+        self.staff_user = User.objects.create_user(
+            username='interno',
+            password='internopass',
+        )
+
+    @patch('tickets.views.sugerir_prioridad', return_value=Ticket.Prioridad.ALTA)
+    def test_reportar_sin_login_crea_ticket_e_historial(self, mock_prioridad):
+        self.assertFalse(self.client.session.get('_auth_user_id'))
+        url = reverse('tickets:reportar')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Todos los tickets')
+
+        response = self.client.post(url, {
+            'titulo': 'Problema público',
+            'descripcion': 'Descripción del reporte anónimo',
+        })
+        self.assertEqual(response.status_code, 302)
+        ticket = Ticket.objects.get(titulo='Problema público')
+        self.assertIsNone(ticket.creado_por)
+        self.assertIsNone(ticket.asignado_a)
+        self.assertEqual(ticket.estado, Ticket.Estado.PENDIENTE)
+        self.assertEqual(ticket.prioridad, Ticket.Prioridad.ALTA)
+        self.assertIsNotNone(ticket.codigo_seguimiento)
+
+        historial = HistorialEstado.objects.filter(ticket=ticket)
+        self.assertEqual(historial.count(), 1)
+        entrada = historial.get()
+        self.assertIsNone(entrada.usuario)
+        self.assertEqual(entrada.estado_anterior, '')
+        self.assertEqual(entrada.estado_nuevo, Ticket.Estado.PENDIENTE)
+        self.assertEqual(entrada.nota, 'Reportado por un usuario anónimo.')
+
+    @patch('tickets.views.sugerir_prioridad', return_value=Ticket.Prioridad.MEDIA)
+    def test_seguimiento_codigo_valido_muestra_datos(self, mock_prioridad):
+        self.client.post(reverse('tickets:reportar'), {
+            'titulo': 'Seguimiento OK',
+            'descripcion': 'Texto visible',
+        })
+        ticket = Ticket.objects.get(titulo='Seguimiento OK')
+        url = reverse('tickets:seguimiento_publico', kwargs={'codigo': ticket.codigo_seguimiento})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Seguimiento OK')
+        self.assertContains(response, 'Texto visible')
+        self.assertContains(response, 'Pendiente')
+        self.assertNotContains(response, 'Todos los tickets')
+        self.assertNotContains(response, 'Nuevo comentario')
+        self.assertNotContains(response, 'Historial de estados')
+
+    def test_seguimiento_codigo_invalido_devuelve_404(self):
+        import uuid
+        url = reverse('tickets:seguimiento_publico', kwargs={'codigo': uuid.uuid4()})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+        self.assertContains(response, 'no encontrado', status_code=404)
+
+    def test_vistas_internas_siguen_requiriendo_login(self):
+        ticket = Ticket.objects.create(
+            titulo='Interno',
+            descripcion='Desc',
+        )
+        urls = [
+            reverse('tickets:lista'),
+            reverse('tickets:detalle', kwargs={'pk': ticket.pk}),
+        ]
+        for url in urls:
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 302)
+            self.assertIn('/accounts/login/', response.url)
+
+    @patch('tickets.views.sugerir_prioridad', return_value=Ticket.Prioridad.BAJA)
+    def test_ticket_publico_aparece_en_lista_interna(self, mock_prioridad):
+        self.client.post(reverse('tickets:reportar'), {
+            'titulo': 'Desde la calle',
+            'descripcion': 'Reporte externo',
+        })
+        self.client.login(username='interno', password='internopass')
+        response = self.client.get(reverse('tickets:lista'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Desde la calle')
+
+    @patch('tickets.views.sugerir_prioridad', return_value=Ticket.Prioridad.MEDIA)
+    def test_consulta_codigo_redirige_a_seguimiento(self, mock_prioridad):
+        self.client.post(reverse('tickets:reportar'), {
+            'titulo': 'Con código',
+            'descripcion': 'Desc',
+        })
+        ticket = Ticket.objects.get(titulo='Con código')
+        response = self.client.post(reverse('tickets:consultar_codigo'), {
+            'codigo': str(ticket.codigo_seguimiento),
+        })
+        self.assertRedirects(
+            response,
+            reverse('tickets:seguimiento_publico', kwargs={'codigo': ticket.codigo_seguimiento}),
+        )
+
+
 class NotificacionSQSTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username='tester', password='12345')
