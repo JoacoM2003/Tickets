@@ -1,0 +1,66 @@
+{% extends "tickets/base.html" %}
+
+{% block title %}Seguimiento de ticket — TicketSystem{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-8">
+
+    {% if not_found %}
+    <div class="card">
+      <div class="card-body p-4 text-center">
+        <div class="text-warning mb-3">
+          <i class="bi bi-exclamation-triangle-fill" style="font-size: 2.5rem;"></i>
+        </div>
+        <h1 class="h4 fw-bold mb-2">Ticket no encontrado</h1>
+        <p class="text-muted mb-4">
+          No encontramos un ticket con ese código de seguimiento. Verificá que el código esté completo y sea correcto.
+        </p>
+        <a href="{% url 'tickets:consultar_codigo' %}" class="btn btn-primary">
+          <i class="bi bi-key me-1"></i>Intentar con otro código
+        </a>
+      </div>
+    </div>
+    {% else %}
+
+    <div class="d-flex align-items-center mb-4 gap-3">
+      <a href="{% url 'tickets:consultar_codigo' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div>
+        <h1 class="h3 mb-0 fw-bold">Estado del ticket</h1>
+        <p class="text-muted mb-0 small font-monospace">{{ ticket.codigo_seguimiento }}</p>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body p-4">
+        <h2 class="h5 fw-bold mb-3">{{ ticket.titulo }}</h2>
+        <p class="text-muted mb-0">{{ ticket.descripcion|linebreaksbr }}</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body p-4">
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <span class="text-muted small d-block mb-1">Estado actual</span>
+            <span class="badge bg-{{ ticket.get_estado_badge_class }}">
+              {{ ticket.get_estado_display }}
+            </span>
+          </div>
+          <div class="col-sm-6">
+            <span class="text-muted small d-block mb-1">Prioridad</span>
+            <span class="badge bg-{{ ticket.get_prioridad_badge_class }}">
+              {{ ticket.get_prioridad_display }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

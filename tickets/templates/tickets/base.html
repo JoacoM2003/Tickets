@@ -193,9 +193,11 @@
   <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-light bg-white">
     <div class="container-fluid px-4">
+      {% if user.is_authenticated %}
       <button class="btn btn-outline-secondary d-lg-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas" aria-label="Abrir menú">
         <i class="bi bi-list"></i>
       </button>
+      {% endif %}
       <a class="navbar-brand" href="{% url 'tickets:dashboard' %}">
         <i class="bi bi-ticket-perforated-fill text-primary me-1"></i>
         <strong>Ticket</strong>System
@@ -225,6 +227,7 @@
     </div>
   </nav>
 
+  {% if user.is_authenticated %}
   <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">
     <div class="offcanvas-header">
       <h5 class="offcanvas-title" id="sidebarOffcanvasLabel">Menú</h5>
@@ -290,11 +293,13 @@
       </nav>
     </div>
   </div>
+  {% endif %}
 
   <!-- Layout principal -->
   <div class="d-flex flex-column flex-lg-row">
 
     <!-- Sidebar -->
+    {% if user.is_authenticated %}
     <nav class="sidebar d-none d-lg-block">
       <ul class="nav flex-column">
         <li class="nav-item">
@@ -352,6 +357,7 @@
         </li>
       </ul>
     </nav>
+    {% endif %}
 
     <!-- Contenido principal -->
     <main class="main-content">
