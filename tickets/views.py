@@ -3,14 +3,22 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, TemplateView, FormView
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.db.models import Count, Q
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import SetPasswordForm
 from .services import sugerir_prioridad
 
 from .models import Ticket, Comentario, HistorialEstado
-from .forms import TicketForm, ActualizarTicketForm, ComentarioForm, UsuarioCrearForm, UsuarioEditarForm
+from .forms import (
+    TicketForm,
+    TicketPublicoForm,
+    ConsultaCodigoForm,
+    ActualizarTicketForm,
+    ComentarioForm,
+    UsuarioCrearForm,
+    UsuarioEditarForm,
+)
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
@@ -144,6 +152,100 @@ class TicketDetailView(LoginRequiredMixin, DetailView):
         context['historial'] = self.object.historial.select_related('usuario').all()
         context['comentario_form'] = ComentarioForm()
         context['actualizar_form'] = ActualizarTicketForm(instance=self.object, user=self.request.user)
+        return context
+
+
+NOTA_REPORTE_ANONIMO = 'Reportado por un usuario anónimo.'
+
+
+class TicketPublicoCreateView(CreateView):
+    """
+    Permite reportar un ticket sin autenticación (solo título y descripción).
+    """
+    model = Ticket
+    form_class = TicketPublicoForm
+    template_name = 'tickets/ticket_publico_form.html'
+
+    def form_valid(self, form):
+        form.instance.creado_por = None
+        form.instance.asignado_a = None
+        form.instance.prioridad = sugerir_prioridad(
+            form.instance.titulo, form.instance.descripcion
+        )
+        response = super().form_valid(form)
+        HistorialEstado.objects.create(
+            ticket=self.object,
+            usuario=None,
+            estado_anterior='',
+            estado_nuevo=self.object.estado,
+            nota=NOTA_REPORTE_ANONIMO,
+        )
+        return response
+
+    def get_success_url(self):
+        return reverse(
+            'tickets:reporte_confirmacion',
+            kwargs={'codigo': self.object.codigo_seguimiento},
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo_pagina'] = 'Reportar un problema'
+        context['accion'] = 'Enviar reporte'
+        return context
+
+
+class TicketReporteConfirmacionView(TemplateView):
+    """Muestra el código de seguimiento tras un reporte público exitoso."""
+    template_name = 'tickets/ticket_reporte_confirmacion.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['ticket'] = get_object_or_404(
+            Ticket, codigo_seguimiento=kwargs['codigo']
+        )
+        return context
+
+
+class TicketSeguimientoPublicoView(DetailView):
+    """
+    Consulta pública del estado de un ticket por código de seguimiento.
+    Solo expone título, descripción, estado y prioridad.
+    """
+    model = Ticket
+    template_name = 'tickets/ticket_seguimiento_publico.html'
+    context_object_name = 'ticket'
+    slug_field = 'codigo_seguimiento'
+    slug_url_kwarg = 'codigo'
+
+    def get(self, request, *args, **kwargs):
+        ticket = Ticket.objects.filter(
+            codigo_seguimiento=kwargs['codigo']
+        ).first()
+        if ticket is None:
+            return render(
+                request,
+                self.template_name,
+                {'not_found': True},
+                status=404,
+            )
+        self.object = ticket
+        context = self.get_context_data(object=self.object)
+        return self.render_to_response(context)
+
+
+class ConsultaCodigoView(FormView):
+    """Formulario para ingresar un código y redirigir al seguimiento público."""
+    template_name = 'tickets/ticket_consulta_codigo.html'
+    form_class = ConsultaCodigoForm
+
+    def form_valid(self, form):
+        codigo = form.cleaned_data['codigo']
+        return redirect('tickets:seguimiento_publico', codigo=codigo)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo_pagina'] = 'Consultar estado de un ticket'
         return context
 
 

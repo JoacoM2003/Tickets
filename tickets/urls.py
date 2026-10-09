@@ -7,6 +7,20 @@ urlpatterns = [
     # Dashboard / inicio
     path('', views.DashboardView.as_view(), name='dashboard'),
 
+    # Reporte y seguimiento público (sin login)
+    path('reportar/', views.TicketPublicoCreateView.as_view(), name='reportar'),
+    path(
+        'reportar/confirmacion/<uuid:codigo>/',
+        views.TicketReporteConfirmacionView.as_view(),
+        name='reporte_confirmacion',
+    ),
+    path(
+        'seguimiento/<uuid:codigo>/',
+        views.TicketSeguimientoPublicoView.as_view(),
+        name='seguimiento_publico',
+    ),
+    path('consultar/', views.ConsultaCodigoView.as_view(), name='consultar_codigo'),
+
     # CRUD de tickets
     path('tickets/', views.TicketListView.as_view(), name='lista'),
     path('tickets/nuevo/', views.TicketCreateView.as_view(), name='crear'),

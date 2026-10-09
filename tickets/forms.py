@@ -5,6 +5,41 @@ from django.db.models import Q
 from .models import Ticket, Comentario
 
 
+class TicketPublicoForm(forms.ModelForm):
+    """Formulario público para reportar un ticket sin autenticación."""
+
+    class Meta:
+        model = Ticket
+        fields = ['titulo', 'descripcion']
+        widgets = {
+            'titulo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Título breve y descriptivo',
+            }),
+            'descripcion': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Describe el problema detalladamente...',
+            }),
+        }
+        labels = {
+            'titulo': 'Título',
+            'descripcion': 'Descripción',
+        }
+
+
+class ConsultaCodigoForm(forms.Form):
+    """Formulario para ingresar un código de seguimiento y consultar el ticket."""
+
+    codigo = forms.UUIDField(
+        label='Código de seguimiento',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ej.: 550e8400-e29b-41d4-a716-446655440000',
+        }),
+    )
+
+
 class TicketForm(forms.ModelForm):
     """
     Formulario para crear y editar tickets.
