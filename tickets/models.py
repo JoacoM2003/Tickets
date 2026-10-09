@@ -1,3 +1,5 @@
+import uuid
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.contrib.auth.models import User
@@ -28,6 +30,14 @@ class Ticket(models.Model):
         MEDIA = 'media', 'Media'
         ALTA = 'alta', 'Alta'
 
+    codigo_seguimiento = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        null=True,
+        blank=True,
+        editable=False,
+        verbose_name='Código de seguimiento',
+    )
     titulo = models.CharField(max_length=200, verbose_name='Título')
     descripcion = models.TextField(verbose_name='Descripción')
     estado = models.CharField(
